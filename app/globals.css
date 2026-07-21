@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 99%;
+    --foreground: 20 14% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 12%;
+    --primary: 158 45% 26%;
+    --primary-foreground: 40 30% 99%;
+    --secondary: 40 30% 95%;
+    --secondary-foreground: 20 14% 20%;
+    --muted: 40 20% 94%;
+    --muted-foreground: 20 10% 42%;
+    --accent: 43 74% 58%;
+    --accent-foreground: 20 14% 14%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 40 30% 99%;
+    --success: 142 60% 38%;
+    --success-foreground: 40 30% 99%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 20 14% 14%;
+    --border: 40 15% 86%;
+    --input: 40 15% 86%;
+    --ring: 158 45% 26%;
+    --chart-1: 158 45% 40%;
+    --chart-2: 43 74% 58%;
+    --chart-3: 197 50% 45%;
+    --chart-4: 28 80% 55%;
+    --chart-5: 340 60% 55%;
+    --radius: 0.625rem;
+  }
+  .dark {
+    --background: 200 20% 8%;
+    --foreground: 40 25% 96%;
+    --card: 200 20% 11%;
+    --card-foreground: 40 25% 96%;
+    --popover: 200 20% 11%;
+    --popover-foreground: 40 25% 96%;
+    --primary: 158 45% 40%;
+    --primary-foreground: 200 20% 8%;
+    --secondary: 200 15% 18%;
+    --secondary-foreground: 40 25% 96%;
+    --muted: 200 15% 16%;
+    --muted-foreground: 40 15% 70%;
+    --accent: 43 74% 58%;
+    --accent-foreground: 200 20% 8%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 40 25% 96%;
+    --success: 142 55% 45%;
+    --success-foreground: 200 20% 8%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 200 20% 8%;
+    --border: 200 15% 20%;
+    --input: 200 15% 20%;
+    --ring: 158 45% 40%;
+    --chart-1: 158 45% 50%;
+    --chart-2: 43 74% 60%;
+    --chart-3: 197 50% 55%;
+    --chart-4: 28 80% 60%;
+    --chart-5: 340 60% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "kern", "liga", "calt";
+  }
+}
+
+@layer utilities {
+  .font-cairo {
+    font-family: var(--font-cairo), system-ui, sans-serif;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 9999px;
+  }
+  .bg-pattern {
+    background-image: radial-gradient(
+      hsl(var(--primary) / 0.06) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+}
