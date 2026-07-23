@@ -28,6 +28,18 @@ points/rewards/exams, activities (trips + football), guardian requests.
 - Scoped access via ownership chains (student→group→sheikh, student→guardian_link).
 */
 
+-- ============ HELPER: get_role (SECURITY DEFINER to avoid RLS recursion) ============
+CREATE OR REPLACE FUNCTION public.get_role()
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN (SELECT role FROM public.profiles WHERE id = auth.uid());
+END;
+$$;
+
 -- ============ PROFILES ============
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -48,8 +60,7 @@ CREATE POLICY "profiles_select_own_or_admin"
 ON public.profiles FOR SELECT TO authenticated
 USING (
   auth.uid() = id
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'sheikh')
+  OR public.get_role() IN ('admin', 'sheikh')
 );
 
 DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
@@ -60,8 +71,8 @@ WITH CHECK (auth.uid() = id);
 DROP POLICY IF EXISTS "profiles_update_own_or_admin" ON public.profiles;
 CREATE POLICY "profiles_update_own_or_admin"
 ON public.profiles FOR UPDATE TO authenticated
-USING (auth.uid() = id OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (auth.uid() = id OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (auth.uid() = id OR public.get_role() = 'admin')
+WITH CHECK (auth.uid() = id OR public.get_role() = 'admin');
 
 -- ============ SECTIONS ============
 CREATE TABLE IF NOT EXISTS public.sections (
@@ -79,8 +90,8 @@ ON public.sections FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "sections_modify_admin" ON public.sections;
 CREATE POLICY "sections_modify_admin"
 ON public.sections FOR ALL TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 -- ============ GROUPS ============
 CREATE TABLE IF NOT EXISTS public.groups (
@@ -106,8 +117,8 @@ ON public.groups FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "groups_modify_admin" ON public.groups;
 CREATE POLICY "groups_modify_admin"
 ON public.groups FOR ALL TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 DROP POLICY IF EXISTS "groups_update_supervisor" ON public.groups;
 CREATE POLICY "groups_update_supervisor"
@@ -167,7 +178,7 @@ CREATE POLICY "students_select_scoped"
 ON public.students FOR SELECT TO authenticated
 USING (
   user_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  OR public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.groups g
     WHERE g.id = students.group_id AND g.supervisor_id = auth.uid()
@@ -182,7 +193,7 @@ DROP POLICY IF EXISTS "students_insert_admin_or_sheikh" ON public.students;
 CREATE POLICY "students_insert_admin_or_sheikh"
 ON public.students FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
 );
 
 DROP POLICY IF EXISTS "students_update_admin_or_sheikh_or_self" ON public.students;
@@ -190,14 +201,14 @@ CREATE POLICY "students_update_admin_or_sheikh_or_self"
 ON public.students FOR UPDATE TO authenticated
 USING (
   user_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  OR public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.groups g WHERE g.id = students.group_id AND g.supervisor_id = auth.uid()
   )
 )
 WITH CHECK (
   user_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  OR public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.groups g WHERE g.id = students.group_id AND g.supervisor_id = auth.uid()
   )
@@ -206,7 +217,7 @@ WITH CHECK (
 DROP POLICY IF EXISTS "students_delete_admin" ON public.students;
 CREATE POLICY "students_delete_admin"
 ON public.students FOR DELETE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin');
 
 -- guardian_links policies (now that students exists)
 DROP POLICY IF EXISTS "glinks_select_scoped" ON public.guardian_links;
@@ -214,7 +225,7 @@ CREATE POLICY "glinks_select_scoped"
 ON public.guardian_links FOR SELECT TO authenticated
 USING (
   guardian_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  OR public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = guardian_links.student_id AND s.user_id = auth.uid()
   )
@@ -227,18 +238,18 @@ USING (
 DROP POLICY IF EXISTS "glinks_insert_admin" ON public.guardian_links;
 CREATE POLICY "glinks_insert_admin"
 ON public.guardian_links FOR INSERT TO authenticated
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+WITH CHECK (public.get_role() = 'admin');
 
 DROP POLICY IF EXISTS "glinks_update_admin" ON public.guardian_links;
 CREATE POLICY "glinks_update_admin"
 ON public.guardian_links FOR UPDATE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 DROP POLICY IF EXISTS "glinks_delete_admin" ON public.guardian_links;
 CREATE POLICY "glinks_delete_admin"
 ON public.guardian_links FOR DELETE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin');
 
 -- ============ ATTENDANCE ============
 CREATE TABLE IF NOT EXISTS public.attendance (
@@ -259,7 +270,7 @@ DROP POLICY IF EXISTS "attendance_select_scoped" ON public.attendance;
 CREATE POLICY "attendance_select_scoped"
 ON public.attendance FOR SELECT TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = attendance.student_id
     AND (s.user_id = auth.uid()
@@ -272,7 +283,7 @@ DROP POLICY IF EXISTS "attendance_insert_admin_or_sheikh" ON public.attendance;
 CREATE POLICY "attendance_insert_admin_or_sheikh"
 ON public.attendance FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = attendance.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -283,14 +294,14 @@ DROP POLICY IF EXISTS "attendance_update_admin_or_sheikh" ON public.attendance;
 CREATE POLICY "attendance_update_admin_or_sheikh"
 ON public.attendance FOR UPDATE TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = attendance.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
   )
 )
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = attendance.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -301,7 +312,7 @@ DROP POLICY IF EXISTS "attendance_delete_admin_or_sheikh" ON public.attendance;
 CREATE POLICY "attendance_delete_admin_or_sheikh"
 ON public.attendance FOR DELETE TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = attendance.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -332,10 +343,10 @@ DROP POLICY IF EXISTS "activities_modify_admin_or_sheikh" ON public.activities;
 CREATE POLICY "activities_modify_admin_or_sheikh"
 ON public.activities FOR ALL TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
 )
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
 );
 
 -- ============ ACTIVITY PARTICIPANTS ============
@@ -354,7 +365,7 @@ DROP POLICY IF EXISTS "participants_select_scoped" ON public.activity_participan
 CREATE POLICY "participants_select_scoped"
 ON public.activity_participants FOR SELECT TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = activity_participants.student_id
     AND (s.user_id = auth.uid()
@@ -370,10 +381,10 @@ DROP POLICY IF EXISTS "participants_modify_admin_or_sheikh" ON public.activity_p
 CREATE POLICY "participants_modify_admin_or_sheikh"
 ON public.activity_participants FOR ALL TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
 )
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
 );
 
 -- ============ FINANCE TRANSACTIONS ============
@@ -396,7 +407,7 @@ DROP POLICY IF EXISTS "finance_select_scoped" ON public.finance_transactions;
 CREATE POLICY "finance_select_scoped"
 ON public.finance_transactions FOR SELECT TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = finance_transactions.student_id
     AND (s.user_id = auth.uid()
@@ -409,7 +420,7 @@ DROP POLICY IF EXISTS "finance_insert_admin_or_sheikh" ON public.finance_transac
 CREATE POLICY "finance_insert_admin_or_sheikh"
 ON public.finance_transactions FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = finance_transactions.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -419,13 +430,13 @@ WITH CHECK (
 DROP POLICY IF EXISTS "finance_update_admin" ON public.finance_transactions;
 CREATE POLICY "finance_update_admin"
 ON public.finance_transactions FOR UPDATE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 DROP POLICY IF EXISTS "finance_delete_admin" ON public.finance_transactions;
 CREATE POLICY "finance_delete_admin"
 ON public.finance_transactions FOR DELETE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin');
 
 -- ============ EXAMS ============
 CREATE TABLE IF NOT EXISTS public.exams (
@@ -444,7 +455,7 @@ DROP POLICY IF EXISTS "exams_select_scoped" ON public.exams;
 CREATE POLICY "exams_select_scoped"
 ON public.exams FOR SELECT TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = exams.student_id
     AND (s.user_id = auth.uid()
@@ -457,14 +468,14 @@ DROP POLICY IF EXISTS "exams_insert_admin_or_sheikh" ON public.exams;
 CREATE POLICY "exams_insert_admin_or_sheikh"
 ON public.exams FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
 );
 
 DROP POLICY IF EXISTS "exams_update_admin_or_sheikh" ON public.exams;
 CREATE POLICY "exams_update_admin_or_sheikh"
 ON public.exams FOR UPDATE TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = exams.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -475,7 +486,7 @@ DROP POLICY IF EXISTS "exams_delete_admin_or_sheikh" ON public.exams;
 CREATE POLICY "exams_delete_admin_or_sheikh"
 ON public.exams FOR DELETE TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = exams.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -499,8 +510,8 @@ ON public.rewards FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "rewards_modify_admin" ON public.rewards;
 CREATE POLICY "rewards_modify_admin"
 ON public.rewards FOR ALL TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 -- ============ REWARD REDEMPTIONS ============
 CREATE TABLE IF NOT EXISTS public.reward_redemptions (
@@ -516,7 +527,7 @@ DROP POLICY IF EXISTS "redemptions_select_scoped" ON public.reward_redemptions;
 CREATE POLICY "redemptions_select_scoped"
 ON public.reward_redemptions FOR SELECT TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = reward_redemptions.student_id
     AND (s.user_id = auth.uid()
@@ -529,20 +540,20 @@ DROP POLICY IF EXISTS "redemptions_insert_admin_or_sheikh_or_self" ON public.rew
 CREATE POLICY "redemptions_insert_admin_or_sheikh_or_self"
 ON public.reward_redemptions FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
   OR EXISTS (SELECT 1 FROM public.students s WHERE s.id = reward_redemptions.student_id AND s.user_id = auth.uid())
 );
 
 DROP POLICY IF EXISTS "redemptions_update_admin" ON public.reward_redemptions;
 CREATE POLICY "redemptions_update_admin"
 ON public.reward_redemptions FOR UPDATE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 DROP POLICY IF EXISTS "redemptions_delete_admin" ON public.reward_redemptions;
 CREATE POLICY "redemptions_delete_admin"
 ON public.reward_redemptions FOR DELETE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin');
 
 -- ============ POINT TRANSACTIONS ============
 CREATE TABLE IF NOT EXISTS public.point_transactions (
@@ -560,7 +571,7 @@ DROP POLICY IF EXISTS "points_select_scoped" ON public.point_transactions;
 CREATE POLICY "points_select_scoped"
 ON public.point_transactions FOR SELECT TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s WHERE s.id = point_transactions.student_id
     AND (s.user_id = auth.uid()
@@ -573,7 +584,7 @@ DROP POLICY IF EXISTS "points_insert_admin_or_sheikh" ON public.point_transactio
 CREATE POLICY "points_insert_admin_or_sheikh"
 ON public.point_transactions FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','sheikh'))
+  public.get_role() IN ('admin', 'sheikh')
   OR EXISTS (SELECT 1 FROM public.students s WHERE s.id = point_transactions.student_id AND s.user_id = auth.uid())
 );
 
@@ -581,7 +592,7 @@ DROP POLICY IF EXISTS "points_delete_admin_or_sheikh" ON public.point_transactio
 CREATE POLICY "points_delete_admin_or_sheikh"
 ON public.point_transactions FOR DELETE TO authenticated
 USING (
-  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  public.get_role() = 'admin'
   OR EXISTS (
     SELECT 1 FROM public.students s, public.groups g
     WHERE s.id = point_transactions.student_id AND g.id = s.group_id AND g.supervisor_id = auth.uid()
@@ -608,7 +619,7 @@ CREATE POLICY "grequests_select_own_or_admin"
 ON public.guardian_requests FOR SELECT TO authenticated
 USING (
   guardian_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  OR public.get_role() = 'admin'
 );
 
 DROP POLICY IF EXISTS "grequests_insert_own" ON public.guardian_requests;
@@ -619,15 +630,15 @@ WITH CHECK (guardian_id = auth.uid());
 DROP POLICY IF EXISTS "grequests_update_admin" ON public.guardian_requests;
 CREATE POLICY "grequests_update_admin"
 ON public.guardian_requests FOR UPDATE TO authenticated
-USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-WITH CHECK (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+USING (public.get_role() = 'admin')
+WITH CHECK (public.get_role() = 'admin');
 
 DROP POLICY IF EXISTS "grequests_delete_own_or_admin" ON public.guardian_requests;
 CREATE POLICY "grequests_delete_own_or_admin"
 ON public.guardian_requests FOR DELETE TO authenticated
 USING (
   guardian_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  OR public.get_role() = 'admin'
 );
 
 -- ============ INDEXES ============
