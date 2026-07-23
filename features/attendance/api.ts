@@ -5,7 +5,7 @@ import type { Attendance, AttendanceStatus, FinanceTransaction } from '@/shared/
 import { monthKey } from '@/shared/lib/roles';
 
 export async function fetchAttendance(studentId: string): Promise<Attendance[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('attendance')
     .select('*')
     .eq('student_id', studentId)
@@ -16,7 +16,7 @@ export async function fetchAttendance(studentId: string): Promise<Attendance[]> 
 
 export async function fetchTodayAttendance(groupId: string): Promise<Attendance[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('attendance')
     .select('*, student:students(id, full_name)')
     .eq('group_id', groupId)
@@ -33,7 +33,7 @@ export async function recordAttendance(
   createdBy?: string
 ): Promise<{ finance?: FinanceTransaction }> {
   const memorized = status === 'present_memorized';
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('attendance')
     .insert({
       student_id: studentId,
@@ -51,7 +51,7 @@ export async function recordAttendance(
   // Auto-create finance transaction based on group finance type
   let finance: FinanceTransaction | undefined;
   if (groupId) {
-    const { data: group } = await supabase.from('groups').select('*').eq('id', groupId).maybeSingle();
+    const { data: group } = await supabase().from('groups').select('*').eq('id', groupId).maybeSingle();
     if (group && group.finance_type === 'deduction') {
       let amount = 0;
       let type: FinanceTransaction['type'] | null = null;
@@ -63,7 +63,7 @@ export async function recordAttendance(
         type = 'no_memorization_deduction';
       }
       if (type && amount > 0) {
-        const { data: fin, error: finErr } = await supabase
+        const { data: fin, error: finErr } = await supabase()
           .from('finance_transactions')
           .insert({
             student_id: studentId,
@@ -86,13 +86,13 @@ export async function recordAttendance(
 }
 
 export async function updateAttendance(id: string, payload: Partial<Attendance>): Promise<void> {
-  const { error } = await supabase.from('attendance').update(payload).eq('id', id);
+  const { error } = await supabase().from('attendance').update(payload).eq('id', id);
   if (error) throw error;
 }
 
 export async function deleteAttendance(id: string): Promise<void> {
   // Also delete linked finance transactions
-  await supabase.from('finance_transactions').delete().eq('ref_attendance_id', id);
-  const { error } = await supabase.from('attendance').delete().eq('id', id);
+  await supabase().from('finance_transactions').delete().eq('ref_attendance_id', id);
+  const { error } = await supabase().from('attendance').delete().eq('id', id);
   if (error) throw error;
 }

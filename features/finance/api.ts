@@ -5,7 +5,7 @@ import type { FinanceTransaction } from '@/shared/types';
 import { monthKey } from '@/shared/lib/roles';
 
 export async function fetchFinance(studentId: string, month?: string): Promise<FinanceTransaction[]> {
-  let q = supabase.from('finance_transactions').select('*').eq('student_id', studentId);
+  let q = supabase().from('finance_transactions').select('*').eq('student_id', studentId);
   if (month) q = q.eq('month_key', month);
   const { data, error } = await q.order('created_at', { ascending: false });
   if (error) throw error;
@@ -13,7 +13,7 @@ export async function fetchFinance(studentId: string, month?: string): Promise<F
 }
 
 export async function fetchFinanceByMonth(studentId: string, month: string): Promise<FinanceTransaction[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('finance_transactions')
     .select('*')
     .eq('student_id', studentId)
@@ -24,7 +24,7 @@ export async function fetchFinanceByMonth(studentId: string, month: string): Pro
 }
 
 export async function addFinanceTransaction(payload: Partial<FinanceTransaction>): Promise<void> {
-  const { error } = await supabase.from('finance_transactions').insert({
+  const { error } = await supabase().from('finance_transactions').insert({
     ...payload,
     month_key: payload.month_key || monthKey(),
   });
@@ -32,13 +32,13 @@ export async function addFinanceTransaction(payload: Partial<FinanceTransaction>
 }
 
 export async function deleteFinanceTransaction(id: string): Promise<void> {
-  const { error } = await supabase.from('finance_transactions').delete().eq('id', id);
+  const { error } = await supabase().from('finance_transactions').delete().eq('id', id);
   if (error) throw error;
 }
 
 export async function fetchFinanceForStudents(studentIds: string[], month: string): Promise<FinanceTransaction[]> {
   if (studentIds.length === 0) return [];
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('finance_transactions')
     .select('*')
     .in('student_id', studentIds)
@@ -49,7 +49,7 @@ export async function fetchFinanceForStudents(studentIds: string[], month: strin
 }
 
 export async function recordMonthlySubscription(studentId: string, amount: number, createdBy?: string): Promise<void> {
-  const { error } = await supabase.from('finance_transactions').insert({
+  const { error } = await supabase().from('finance_transactions').insert({
     student_id: studentId,
     month_key: monthKey(),
     type: 'subscription',
@@ -61,7 +61,7 @@ export async function recordMonthlySubscription(studentId: string, amount: numbe
 }
 
 export async function recordPayment(studentId: string, amount: number, createdBy?: string): Promise<void> {
-  const { error } = await supabase.from('finance_transactions').insert({
+  const { error } = await supabase().from('finance_transactions').insert({
     student_id: studentId,
     month_key: monthKey(),
     type: 'payment',

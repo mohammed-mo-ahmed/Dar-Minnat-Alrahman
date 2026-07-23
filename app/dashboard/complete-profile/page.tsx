@@ -32,7 +32,7 @@ export default function CompleteProfilePage() {
   });
 
   useEffect(() => {
-    supabase.from('sections').select('*').order('name').then(({ data }) => {
+    supabase().from('sections').select('*').order('name').then(({ data }) => {
       if (data) setSections(data as Section[]);
     });
   }, []);
@@ -73,7 +73,7 @@ export default function CompleteProfilePage() {
       if (form.student_phone) profileUpdate.phone = form.student_phone;
       if (photoDataUrl) profileUpdate.photo_url = photoDataUrl;
 
-      const { error: pErr } = await supabase.from('profiles').update(profileUpdate).eq('id', profile.id);
+      const { error: pErr } = await supabase().from('profiles').update(profileUpdate).eq('id', profile.id);
       if (pErr) throw pErr;
 
       // 2. Create student record linked to this user
@@ -87,7 +87,7 @@ export default function CompleteProfilePage() {
         current_memorization: form.current_memorization || null,
         photo_url: photoDataUrl || null,
       };
-      const { data: student, error: sErr } = await supabase
+      const { data: student, error: sErr } = await supabase()
         .from('students')
         .insert(studentInsert)
         .select()
@@ -96,7 +96,7 @@ export default function CompleteProfilePage() {
 
       // 3. If photo uploaded, also set on student row
       if (photoDataUrl && student) {
-        await supabase.from('students').update({ photo_url: photoDataUrl }).eq('id', student.id);
+        await supabase().from('students').update({ photo_url: photoDataUrl }).eq('id', student.id);
       }
 
       await refreshProfile();

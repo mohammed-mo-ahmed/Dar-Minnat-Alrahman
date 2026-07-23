@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { GuardianRequest, GuardianLink } from '@/shared/types';
 
 export async function fetchGuardianRequests(): Promise<GuardianRequest[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('guardian_requests')
     .select('*, guardian:profiles(id, display_name, phone, email)')
     .order('created_at', { ascending: false });
@@ -13,7 +13,7 @@ export async function fetchGuardianRequests(): Promise<GuardianRequest[]> {
 }
 
 export async function fetchMyGuardianRequests(guardianId: string): Promise<GuardianRequest[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('guardian_requests')
     .select('*')
     .eq('guardian_id', guardianId)
@@ -23,7 +23,7 @@ export async function fetchMyGuardianRequests(guardianId: string): Promise<Guard
 }
 
 export async function submitGuardianRequest(guardianId: string, studentNameText: string, extraInfo?: string): Promise<void> {
-  const { error } = await supabase.from('guardian_requests').insert({
+  const { error } = await supabase().from('guardian_requests').insert({
     guardian_id: guardianId,
     student_name_text: studentNameText,
     extra_info: extraInfo || null,
@@ -33,7 +33,7 @@ export async function submitGuardianRequest(guardianId: string, studentNameText:
 
 export async function approveGuardianRequest(requestId: string, studentId: string, adminId: string): Promise<void> {
   // 1. Update request
-  const { error: rErr } = await supabase
+  const { error: rErr } = await supabase()
     .from('guardian_requests')
     .update({
       status: 'approved',
@@ -45,7 +45,7 @@ export async function approveGuardianRequest(requestId: string, studentId: strin
   if (rErr) throw rErr;
 
   // 2. Fetch the guardian_id from the request
-  const { data: req } = await supabase
+  const { data: req } = await supabase()
     .from('guardian_requests')
     .select('guardian_id')
     .eq('id', requestId)
@@ -53,7 +53,7 @@ export async function approveGuardianRequest(requestId: string, studentId: strin
   if (!req) throw new Error('الطلب غير موجود');
 
   // 3. Create guardian_link (upsert)
-  const { error: lErr } = await supabase
+  const { error: lErr } = await supabase()
     .from('guardian_links')
     .upsert(
       { guardian_id: req.guardian_id, student_id: studentId, status: 'approved' },
@@ -63,7 +63,7 @@ export async function approveGuardianRequest(requestId: string, studentId: strin
 }
 
 export async function rejectGuardianRequest(requestId: string, adminNote: string, adminId: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await supabase()
     .from('guardian_requests')
     .update({
       status: 'rejected',
@@ -76,7 +76,7 @@ export async function rejectGuardianRequest(requestId: string, adminNote: string
 }
 
 export async function fetchGuardianLinks(guardianId: string): Promise<GuardianLink[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('guardian_links')
     .select('*, student:students(id, full_name)')
     .eq('guardian_id', guardianId)

@@ -15,11 +15,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
+    const supabase()Url = Deno.env.get('SUPABASE_URL') || Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!supabase()Url || !serviceRoleKey) {
       return new Response(JSON.stringify({ error: 'missing env' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
     const token = authHeader.replace('Bearer ', '');
 
     // Verify caller is authenticated and is an admin
-    const callerClient = createClient(supabaseUrl, anonKey || serviceRoleKey, {
+    const callerClient = createClient(supabase()Url, anonKey || serviceRoleKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
     const { data: callerData, error: callerErr } = await callerClient.auth.getUser();
@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    const adminClient = createClient(supabase()Url, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { error } = await adminClient.auth.admin.updateUserById(userId, { password: newPassword });

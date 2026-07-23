@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { Profile, Group, Section } from '@/shared/types';
 
 export async function fetchProfiles(): Promise<Profile[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false });
@@ -13,13 +13,13 @@ export async function fetchProfiles(): Promise<Profile[]> {
 }
 
 export async function fetchSections(): Promise<Section[]> {
-  const { data, error } = await supabase.from('sections').select('*').order('name');
+  const { data, error } = await supabase().from('sections').select('*').order('name');
   if (error) throw error;
   return (data as Section[]) ?? [];
 }
 
 export async function fetchGroups(): Promise<Group[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase()
     .from('groups')
     .select('*, section:sections(*), supervisor:profiles(id, display_name, phone)')
     .order('name');
@@ -28,12 +28,12 @@ export async function fetchGroups(): Promise<Group[]> {
 }
 
 export async function updateProfileRole(profileId: string, role: Profile['role']) {
-  const { error } = await supabase.from('profiles').update({ role }).eq('id', profileId);
+  const { error } = await supabase().from('profiles').update({ role }).eq('id', profileId);
   if (error) throw error;
 }
 
 export async function adminResetPassword(userId: string, newPassword: string) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase().auth.getSession();
   const res = await fetch('/api/admin-reset-password', {
     method: 'POST',
     headers: {

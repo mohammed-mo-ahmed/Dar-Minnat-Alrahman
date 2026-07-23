@@ -85,7 +85,7 @@ export default function UsersPage() {
       await updateProfileRole(promoteTarget.id, promoteRole);
       if (promoteRole === 'sheikh' && promoteGroupId) {
         const { error } = await import('@/lib/supabase/client').then((m) =>
-          m.supabase.from('groups').update({ supervisor_id: promoteTarget.id }).eq('id', promoteGroupId)
+          m.supabase().from('groups').update({ supervisor_id: promoteTarget.id }).eq('id', promoteGroupId)
         );
         if (error) throw error;
       }

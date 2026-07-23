@@ -38,8 +38,8 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     const { error } = signInMethod === 'email'
-      ? await supabase.auth.signInWithPassword({ email: signInEmail.trim(), password: signInPassword })
-      : await supabase.auth.signInWithPassword({ phone: signInPhone.trim(), password: signInPassword });
+      ? await supabase().auth.signInWithPassword({ email: signInEmail.trim(), password: signInPassword })
+      : await supabase().auth.signInWithPassword({ phone: signInPhone.trim(), password: signInPassword });
     setLoading(false);
     if (error) {
       toast.error('بيانات الدخول غير صحيحة: ' + error.message);
@@ -52,7 +52,7 @@ export default function AuthPage() {
   async function handleSignUpEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase().auth.signUp({
       email: suEmail.trim(),
       password: suPassword,
       options: { data: { full_name: suName.trim() } },
@@ -64,7 +64,7 @@ export default function AuthPage() {
     }
     if (data.user) {
       // Update profile with display_name + phone
-      await supabase
+      await supabase()
         .from('profiles')
         .update({ display_name: suName.trim() })
         .eq('id', data.user.id);
@@ -79,7 +79,7 @@ export default function AuthPage() {
     // Supabase email/password auth requires an email field. We synthesize a unique
     // pseudo-email from the phone number so users can register with phone only.
     const pseudoEmail = `${spPhone.trim().replace(/[^0-9]/g, '')}@phone.dar-minna.local`;
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase().auth.signUp({
       email: pseudoEmail,
       password: spPassword,
       options: { data: { full_name: spName.trim(), phone: spPhone.trim() } },
@@ -90,7 +90,7 @@ export default function AuthPage() {
       return;
     }
     if (data.user) {
-      await supabase
+      await supabase()
         .from('profiles')
         .update({ display_name: spName.trim(), phone: spPhone.trim() })
         .eq('id', data.user.id);
@@ -101,7 +101,7 @@ export default function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase().auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/dashboard` },
     });
