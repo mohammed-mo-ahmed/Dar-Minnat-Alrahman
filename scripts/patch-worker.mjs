@@ -10,7 +10,7 @@ async fetch(request, env, ctx) {
   var url = new URL(request.url);
   if (url.pathname.startsWith("/_next/") || url.pathname === "/favicon.ico") {
     try {
-      var asset = await env.ASSETS.fetch(request);
+      var asset = await env.ASSETS.fetch(new URL(url.pathname, "https://assets.local"));
       if (asset.status !== 404) return asset;
     } catch (e) {}
   }
