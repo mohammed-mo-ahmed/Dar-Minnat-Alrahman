@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cf": "npx opennextjs-cloudflare build && cp -r .open-next/cache/. .open-next/cdn-cgi/_next_cache/",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
