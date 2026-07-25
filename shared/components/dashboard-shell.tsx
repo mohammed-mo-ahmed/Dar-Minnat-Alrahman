@@ -18,7 +18,8 @@ import {
 import { cn } from '@/lib/utils';
 import { roleLabels, roleColors } from '@/shared/lib/roles';
 import { navItems } from '@/shared/lib/nav';
-import { BookOpen, LogOut, Menu, User as UserIcon, ChevronLeft } from 'lucide-react';
+import Image from 'next/image';
+import { LogOut, Menu, User as UserIcon, ChevronLeft } from 'lucide-react';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
@@ -64,8 +65,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar (desktop) */}
       <aside className="hidden lg:flex w-64 flex-col border-s border-border bg-card">
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
-          <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
-            <BookOpen className="h-5 w-5" />
+          <div className="h-9 w-9 rounded-xl overflow-hidden relative shrink-0">
+            <Image src="/logo.png" alt="دار منة الرحمن" fill className="object-contain" />
           </div>
           <div className="leading-tight">
             <p className="font-bold text-sm">دار منة الرحمن</p>
@@ -108,8 +109,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </SheetTrigger>
             <SheetContent side="right" className="w-64 p-0">
               <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
-                <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
-                  <BookOpen className="h-5 w-5" />
+                <div className="h-9 w-9 rounded-xl overflow-hidden relative shrink-0">
+                  <Image src="/logo.png" alt="دار منة الرحمن" fill className="object-contain" />
                 </div>
                 <div className="leading-tight">
                   <p className="font-bold text-sm">دار منة الرحمن</p>
