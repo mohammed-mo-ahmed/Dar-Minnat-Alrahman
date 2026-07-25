@@ -53,6 +53,11 @@ export async function deleteGroup(id: string) {
   if (error) throw error;
 }
 
+export async function deleteSection(id: string) {
+  const { error } = await supabase().from('sections').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function createSection(name: string, gender: 'male' | 'female') {
   const { data, error } = await supabase()
     .from('sections')

@@ -7,6 +7,7 @@ import {
   fetchGroups,
   fetchProfilesForSupervisors,
   createSection,
+  deleteSection,
   createGroup,
   updateGroup,
   deleteGroup,
@@ -161,6 +162,17 @@ export default function GroupsPage() {
     }
   }
 
+  async function handleDeleteSection(section: Section) {
+    if (!confirm(`حذف القسم "${section.name}"؟ سيتم نقل جميع المجموعات المرتبطة به.`)) return;
+    try {
+      await deleteSection(section.id);
+      toast.success('تم حذف القسم');
+      load();
+    } catch (e: any) {
+      toast.error('تعذّر الحذف: ' + e.message);
+    }
+  }
+
   async function handleDeleteGroup(g: Group) {
     if (!confirm(`حذف المجموعة "${g.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
     try {
@@ -207,9 +219,14 @@ export default function GroupsPage() {
                         {sectionGroups.length} مجموعة
                       </Badge>
                     </CardTitle>
-                    <Button size="sm" variant="ghost" onClick={() => openNewGroup(section.id)}>
-                      <Plus className="h-4 w-4" /> مجموعة
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => openNewGroup(section.id)}>
+                        <Plus className="h-4 w-4" /> مجموعة
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDeleteSection(section)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
