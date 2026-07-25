@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/shared/providers/auth-provider';
 import {
   fetchStudents,
-  fetchStudentsForSheikh,
+  fetchStudentsBySection,
+  fetchMySectionIds,
+  fetchMyGroups,
   createStudent,
   updateStudent,
   deleteStudent,
@@ -15,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -43,6 +44,9 @@ import {
   Phone,
   MessageCircle,
   Eye,
+  UserPlus,
+  UserMinus,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -53,6 +57,7 @@ export default function StudentsPage() {
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('all');
@@ -81,12 +86,23 @@ export default function StudentsPage() {
     if (!me) return;
     setLoading(true);
     try {
-      const [s, g] = await Promise.all([
-        me.role === 'sheikh' ? fetchStudentsForSheikh(me.id) : fetchStudents(),
-        fetchGroups(),
-      ]);
-      setStudents(s);
-      setGroups(g);
+      if (me.role === 'sheikh') {
+        const [sectionIds, myG] = await Promise.all([
+          fetchMySectionIds(me.id),
+          fetchMyGroups(me.id),
+        ]);
+        setMyGroups(myG);
+        const [s, g] = await Promise.all([
+          sectionIds.length > 0 ? fetchStudentsBySection(sectionIds) : Promise.resolve([] as Student[]),
+          fetchGroups(),
+        ]);
+        setStudents(s);
+        setGroups(g);
+      } else {
+        const [s, g] = await Promise.all([fetchStudents(), fetchGroups()]);
+        setStudents(s);
+        setGroups(g);
+      }
     } catch (e: any) {
       toast.error('تعذّر تحميل الطلاب: ' + e.message);
     } finally {
@@ -193,6 +209,27 @@ export default function StudentsPage() {
     }
   }
 
+  async function handleAssignToMyGroup(studentId: string, groupId: string) {
+    try {
+      await updateStudent(studentId, { group_id: groupId });
+      toast.success('تمت إضافة الطالب إلى المجموعة');
+      load();
+    } catch (e: any) {
+      toast.error('تعذّرت الإضافة: ' + e.message);
+    }
+  }
+
+  async function handleRemoveFromGroup(studentId: string) {
+    if (!confirm('إزالة الطالب من المجموعة؟')) return;
+    try {
+      await updateStudent(studentId, { group_id: null });
+      toast.success('تمت إزالة الطالب من المجموعة');
+      load();
+    } catch (e: any) {
+      toast.error('تعذّرت الإزالة: ' + e.message);
+    }
+  }
+
   function whatsappLink(s: Student) {
     const phone = (s.guardian_phone || '').replace(/[^0-9]/g, '');
     const intl = phone.startsWith('20') ? phone : phone.startsWith('0') ? '2' + phone.slice(1) : phone;
@@ -210,7 +247,7 @@ export default function StudentsPage() {
             <GraduationCap className="h-6 w-6 text-primary" /> الطلاب
           </h1>
           <p className="text-sm text-muted-foreground">
-            {me.role === 'sheikh' ? 'طلاب مجموعتك' : 'كل الطلاب'} — {students.length} طالب
+            {me.role === 'sheikh' ? `طلاب قسمك — ${students.length} طالب` : `كل الطلاب — ${students.length} طالب`}
           </p>
         </div>
         <Button onClick={openNew}>
@@ -314,6 +351,14 @@ export default function StudentsPage() {
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           )}
+                          {me.role === 'sheikh' && (
+                            <GroupActions
+                              student={s}
+                              myGroups={myGroups}
+                              onAssign={handleAssignToMyGroup}
+                              onRemove={handleRemoveFromGroup}
+                            />
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -410,5 +455,58 @@ export default function StudentsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function GroupActions({
+  student,
+  myGroups,
+  onAssign,
+  onRemove,
+}: {
+  student: Student;
+  myGroups: Group[];
+  onAssign: (studentId: string, groupId: string) => void;
+  onRemove: (studentId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const isInMyGroup = student.group_id && myGroups.some((g) => g.id === student.group_id);
+
+  if (myGroups.length === 0) return null;
+
+  if (isInMyGroup) {
+    return (
+      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" title="إزالة من مجموعتي" onClick={() => onRemove(student.id)}>
+        <UserMinus className="h-3.5 w-3.5" />
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" title="إضافة إلى مجموعة" onClick={() => setOpen(true)}>
+        <UserPlus className="h-3.5 w-3.5" />
+      </Button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>
+          <div className="bg-card rounded-xl shadow-2xl border p-4 w-72" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-semibold mb-3">اختر المجموعة</p>
+            <div className="space-y-1">
+              {myGroups.map((g) => (
+                <Button
+                  key={g.id}
+                  variant="outline"
+                  className="w-full justify-start text-sm"
+                  onClick={() => { onAssign(student.id, g.id); setOpen(false); }}
+                >
+                  {g.name}
+                </Button>
+              ))}
+            </div>
+            <Button variant="ghost" className="w-full mt-2 text-xs" onClick={() => setOpen(false)}>إلغاء</Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

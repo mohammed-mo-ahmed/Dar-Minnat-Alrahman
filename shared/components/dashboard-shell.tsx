@@ -151,6 +151,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/profile" className="cursor-pointer">
+                  <UserIcon className="h-4 w-4 me-2" />
+                  الملف الشخصي
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 <LogOut className="h-4 w-4 me-2" />
                 تسجيل الخروج

@@ -13,6 +13,7 @@ import {
   HeartHandshake,
   Send,
   UserPlus,
+  User,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -22,9 +23,11 @@ export type NavItem = {
 };
 
 export function navItems(role: Role): NavItem[] {
+  const profileItem = { href: '/dashboard/profile', label: 'الملف الشخصي', icon: User };
   switch (role) {
     case 'admin':
       return [
+        profileItem,
         { href: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard },
         { href: '/dashboard/users', label: 'المستخدمون والأدوار', icon: UserCog },
         { href: '/dashboard/groups', label: 'الأقسام والمجموعات', icon: Users },
@@ -38,8 +41,9 @@ export function navItems(role: Role): NavItem[] {
       ];
     case 'sheikh':
       return [
+        profileItem,
         { href: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard },
-        { href: '/dashboard/students', label: 'طلاب مجموعتي', icon: GraduationCap },
+        { href: '/dashboard/students', label: 'الطلاب', icon: GraduationCap },
         { href: '/dashboard/attendance', label: 'الحضور والغياب', icon: CalendarCheck },
         { href: '/dashboard/finance', label: 'الحسابات المالية', icon: Wallet },
         { href: '/dashboard/points', label: 'النقاط والمكافآت', icon: Trophy },
@@ -48,12 +52,14 @@ export function navItems(role: Role): NavItem[] {
       ];
     case 'guardian':
       return [
+        profileItem,
         { href: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard },
         { href: '/dashboard/my-children', label: 'أبنائي', icon: GraduationCap },
         { href: '/dashboard/guardian-request', label: 'تقديم طلب ربط', icon: UserPlus },
       ];
     case 'student':
       return [
+        profileItem,
         { href: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard },
         { href: '/dashboard/my-progress', label: 'تقدمي', icon: BookOpen },
         { href: '/dashboard/leaderboard', label: 'لوحة الصدارة', icon: Trophy },

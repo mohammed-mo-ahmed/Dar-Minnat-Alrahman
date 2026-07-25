@@ -89,3 +89,37 @@ export async function fetchSections(): Promise<Section[]> {
   if (error) throw error;
   return (data as Section[]) ?? [];
 }
+
+/** Get the section IDs a sheikh supervises (through their groups) */
+export async function fetchMySectionIds(sheikhId: string): Promise<string[]> {
+  const { data, error } = await supabase()
+    .from('groups')
+    .select('section_id')
+    .eq('supervisor_id', sheikhId)
+    .not('section_id', 'is', null);
+  if (error) throw error;
+  return [...new Set((data ?? []).map((g: any) => g.section_id))];
+}
+
+/** Get all groups supervised by a sheikh */
+export async function fetchMyGroups(sheikhId: string): Promise<Group[]> {
+  const { data, error } = await supabase()
+    .from('groups')
+    .select('*, section:sections(*)')
+    .eq('supervisor_id', sheikhId)
+    .order('name');
+  if (error) throw error;
+  return (data as Group[]) ?? [];
+}
+
+/** Get all students in given sections (with full group info) */
+export async function fetchStudentsBySection(sectionIds: string[]): Promise<Student[]> {
+  if (sectionIds.length === 0) return [];
+  const { data, error } = await supabase()
+    .from('students')
+    .select('*, group:groups(*, section:sections(*), supervisor:profiles(id, display_name, phone))')
+    .in('section_id', sectionIds)
+    .order('full_name');
+  if (error) throw error;
+  return (data as Student[]) ?? [];
+}
