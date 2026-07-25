@@ -1,12 +1,10 @@
 /*
   # Clean up students table — remove redundancy
 
-  1. Remove auto-create from signup trigger (handle_new_user)
-  2. Add trigger: when profile role changes to 'student', auto-create record
-  3. Add index on profiles.section_id for performance
-
-  Note: existing student records for non-students are kept (they contain
-  real data like name, phone, photo from complete-profile).
+  1. Sync student fields from profiles (fill missing data)
+  2. Remove auto-create from signup trigger (handle_new_user)
+  3. Add trigger: when profile role changes to 'student', auto-create record
+  4. Add index on profiles.section_id for performance
 */
 
 -- Remove student auto-create from signup trigger
