@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   address text,
   section_id uuid REFERENCES public.sections(id) ON DELETE SET NULL,
   group_id uuid REFERENCES public.groups(id) ON DELETE SET NULL,
-  user_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  user_id uuid UNIQUE REFERENCES public.profiles(id) ON DELETE SET NULL,
   current_memorization text,
   last_memorized text,
   next_assignment text,
@@ -662,6 +662,10 @@ BEGIN
   INSERT INTO public.profiles (id, email, display_name)
   VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email))
   ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO public.students (full_name, user_id)
+  VALUES (COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email), NEW.id)
+  ON CONFLICT DO NOTHING;
   RETURN NEW;
 END;
 $$;
