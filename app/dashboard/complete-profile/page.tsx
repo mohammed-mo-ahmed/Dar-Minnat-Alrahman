@@ -75,7 +75,14 @@ export default function CompleteProfilePage() {
       if (photoDataUrl) profileUpdate.photo_url = photoDataUrl;
 
       const { error: pErr } = await supabase().from('profiles').update(profileUpdate).eq('id', profile.id);
-      if (pErr) throw pErr;
+      if (pErr) {
+        if (pErr.message.includes('idx_profiles_phone_unique')) {
+          toast.error('رقم الهاتف مستخدم بالفعل من قبل حساب آخر.');
+          setLoading(false);
+          return;
+        }
+        throw pErr;
+      }
 
       // 2. Create student record linked to this user
       const studentInsert: Record<string, unknown> = {

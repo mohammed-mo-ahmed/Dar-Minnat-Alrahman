@@ -39,7 +39,14 @@ export default function ProfilePage() {
       if (photoDataUrl) update.photo_url = photoDataUrl;
 
       const { error } = await supabase().from('profiles').update(update).eq('id', profile.id);
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('idx_profiles_phone_unique')) {
+          toast.error('رقم الهاتف مستخدم بالفعل من قبل حساب آخر.');
+          setSaving(false);
+          return;
+        }
+        throw error;
+      }
 
       await refreshProfile();
       toast.success('تم حفظ التعديلات');

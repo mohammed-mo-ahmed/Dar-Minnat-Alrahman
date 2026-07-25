@@ -113,6 +113,22 @@ export default function AuthPage() {
   async function handleSignUpPhone(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
+    // Check if phone already exists
+    try {
+      const res = await fetch('/api/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: spPhone.trim(), type: 'phone' }),
+      });
+      const { ok, exists } = await res.json();
+      if (ok && exists) {
+        setLoading(false);
+        toast.error('رقم الهاتف مستخدم بالفعل من قبل حساب آخر.');
+        return;
+      }
+    } catch { /* ignore, let signup try */ }
+
     // Supabase email/password auth requires an email field. We synthesize a unique
     // pseudo-email from the phone number so users can register with phone only.
     const pseudoEmail = `${spPhone.trim().replace(/[^0-9]/g, '')}@phone.dar-minna.local`;
@@ -121,17 +137,25 @@ export default function AuthPage() {
       password: spPassword,
       options: { data: { full_name: spName.trim(), phone: spPhone.trim() } },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error('تعذّر إنشاء الحساب: ' + error.message);
       return;
     }
     if (data.user) {
-      await supabase()
+      const { error: pErr } = await supabase()
         .from('profiles')
         .update({ display_name: spName.trim(), phone: spPhone.trim() })
         .eq('id', data.user.id);
+      if (pErr) {
+        setLoading(false);
+        toast.error(pErr.message.includes('idx_profiles_phone_unique')
+          ? 'رقم الهاتف مستخدم بالفعل من قبل حساب آخر.'
+          : 'تعذّر حفظ بياناتك: ' + pErr.message);
+        return;
+      }
     }
+    setLoading(false);
     toast.success('تم إنشاء الحساب. يرجى استكمال بياناتك.');
     router.push('/dashboard');
   }
