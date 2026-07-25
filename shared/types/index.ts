@@ -8,6 +8,7 @@ export type Profile = {
   email: string | null;
   photo_url: string | null;
   profile_completed: boolean;
+  section_id: string | null;
   created_at: string;
   updated_at: string;
 };

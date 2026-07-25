@@ -65,9 +65,10 @@ export default function CompleteProfilePage() {
     }
 
     try {
-      // 1. Update profile: phone + photo + completed flag
+      // 1. Update profile: phone + photo + section + completed flag
       const profileUpdate: Record<string, unknown> = {
         profile_completed: true,
+        section_id: form.section_id || null,
         updated_at: new Date().toISOString(),
       };
       if (form.student_phone) profileUpdate.phone = form.student_phone;

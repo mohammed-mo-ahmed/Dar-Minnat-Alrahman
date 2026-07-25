@@ -90,8 +90,17 @@ export async function fetchSections(): Promise<Section[]> {
   return (data as Section[]) ?? [];
 }
 
-/** Get the section IDs a sheikh supervises (through their groups) */
+/** Get the section IDs for a sheikh — profile.section_id first, then fallback to groups */
 export async function fetchMySectionIds(sheikhId: string): Promise<string[]> {
+  // 1. Try profile's section_id
+  const { data: profile } = await supabase()
+    .from('profiles')
+    .select('section_id')
+    .eq('id', sheikhId)
+    .maybeSingle();
+  if (profile?.section_id) return [profile.section_id];
+
+  // 2. Fallback: groups the sheikh supervises
   const { data, error } = await supabase()
     .from('groups')
     .select('section_id')
