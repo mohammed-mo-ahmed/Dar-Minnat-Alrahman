@@ -42,7 +42,18 @@ export default function AuthPage() {
       : await supabase().auth.signInWithPassword({ phone: signInPhone.trim(), password: signInPassword });
     setLoading(false);
     if (error) {
-      toast.error('بيانات الدخول غير صحيحة: ' + error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes('invalid login credentials')) {
+        toast.error('كلمة المرور غير صحيحة. حاول مرة أخرى.');
+      } else if (msg.includes('user not found') || msg.includes('no user')) {
+        toast.error(signInMethod === 'email'
+          ? 'لا يوجد حساب بهذا البريد الإلكتروني.'
+          : 'لا يوجد حساب بهذا الرقم.');
+      } else if (msg.includes('email not confirmed')) {
+        toast.error('البريد الإلكتروني لم يتم تأكيده بعد. فضلًا تحقق من بريدك.');
+      } else {
+        toast.error('بيانات الدخول غير صحيحة: ' + error.message);
+      }
       return;
     }
     toast.success('تم تسجيل الدخول بنجاح');
