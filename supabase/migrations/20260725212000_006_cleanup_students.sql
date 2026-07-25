@@ -1,20 +1,15 @@
 /*
   # Clean up students table — remove redundancy
 
-  1. Delete student records for non-students (sheikh, guardian, admin)
-  2. Remove auto-create from signup trigger (handle_new_user)
-  3. Add trigger: when profile role changes to/from 'student', sync student record
-  4. Add index on profiles.section_id for performance
+  1. Remove auto-create from signup trigger (handle_new_user)
+  2. Add trigger: when profile role changes to 'student', auto-create record
+  3. Add index on profiles.section_id for performance
+
+  Note: existing student records for non-students are kept (they contain
+  real data like name, phone, photo from complete-profile).
 */
 
--- 1. Clean up existing student records for non-students
--- Safe: FKs to students have ON DELETE CASCADE or SET NULL,
---       and non-student records have no related data anyway.
-DELETE FROM public.students s
-USING public.profiles p
-WHERE s.user_id = p.id AND p.role != 'student';
-
--- 2. Remove student auto-create from signup trigger
+-- Remove student auto-create from signup trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -29,8 +24,8 @@ BEGIN
 END;
 $$;
 
--- 3. Trigger: auto-create student record when role changes TO student
--- (Does NOT auto-delete when role changes FROM student — admin handles it)
+-- 2. Trigger: auto-create student record when role changes TO student
+-- (Does NOT auto-delete when role changes FROM student — data is kept)
 CREATE OR REPLACE FUNCTION public.sync_student_on_role_change()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -53,5 +48,5 @@ AFTER UPDATE OF role ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.sync_student_on_role_change();
 
--- 4. Index on profiles.section_id (used by sheikh section queries)
+-- 3. Index on profiles.section_id (used by sheikh section queries)
 CREATE INDEX IF NOT EXISTS idx_profiles_section_id ON public.profiles(section_id);
