@@ -5,14 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cf": "npx opennextjs-cloudflare build && mkdir -p .open-next/cdn-cgi/_next_cache && cp -r .open-next/cache/. .open-next/cdn-cgi/_next_cache/ && mv .open-next/worker.js .open-next/_worker.js && node scripts/patch-worker.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
-    "@netlify/plugin-nextjs": "^5.15.12",
     "@radix-ui/react-accordion": "^1.2.18",
     "@radix-ui/react-alert-dialog": "^1.1.21",
     "@radix-ui/react-aspect-ratio": "^1.1.13",
@@ -69,12 +67,10 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
-    "@opennextjs/cloudflare": "^1.20.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^10.7.0",
     "eslint-config-next": "^16.2.11",
-    "typescript": "^5.2.2",
-    "wrangler": "^4.113.0"
+    "typescript": "^5.2.2"
   }
 }
