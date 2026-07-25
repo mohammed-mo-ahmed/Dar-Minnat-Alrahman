@@ -22,3 +22,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- Backfill: create student records for existing users who don't have one
+INSERT INTO public.students (full_name, user_id)
+SELECT COALESCE(p.display_name, p.email, 'طالب'), p.id
+FROM public.profiles p
+LEFT JOIN public.students s ON s.user_id = p.id
+WHERE s.id IS NULL
+ON CONFLICT DO NOTHING;
