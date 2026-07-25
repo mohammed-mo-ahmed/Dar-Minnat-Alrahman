@@ -96,11 +96,7 @@ VALUES (
   'a0000000-0000-0000-0000-000000000003',
   'c0000000-0000-0000-0000-000000000001',
   120
-)
-ON CONFLICT (user_id) DO UPDATE SET
-  id = EXCLUDED.id,
-  group_id = EXCLUDED.group_id,
-  points_balance = EXCLUDED.points_balance;
+);
 
 -- ============================================================
 -- 6. GUARDIAN LINK  (guardian → student)
