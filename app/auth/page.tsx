@@ -117,8 +117,8 @@ export default function AuthPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="h-12 w-12 rounded-2xl overflow-hidden bg-primary/10 relative">
-              <Image src="/logo.png" alt="دار منة الرحمن" fill className="object-cover scale-100" />
+            <div className="h-12 w-12 rounded-2xl overflow-hidden relative">
+              <Image src="/logo.png" alt="دار منة الرحمن" fill className="object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-primary">دار منة الرحمن</h1>
@@ -359,8 +359,8 @@ export default function AuthPage() {
       <div className="hidden lg:flex w-1/2 bg-primary text-primary-foreground p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-pattern opacity-20" />
         <div className="relative z-10 flex items-center gap-3">
-          <div className="h-14 w-14 rounded-2xl overflow-hidden bg-primary-foreground/15 backdrop-blur relative">
-            <Image src="/logo.png" alt="دار منة الرحمن" fill className="object-cover scale-100" />
+          <div className="h-14 w-14 rounded-2xl overflow-hidden relative">
+            <Image src="/logo.png" alt="دار منة الرحمن" fill className="object-contain" />
           </div>
           <div>
             <h1 className="text-2xl font-bold leading-tight">دار منة الرحمن</h1>
