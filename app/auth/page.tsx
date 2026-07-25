@@ -69,7 +69,10 @@ export default function AuthPage() {
 
     const { error } = signInMethod === 'email'
       ? await supabase().auth.signInWithPassword({ email: credential, password: signInPassword })
-      : await supabase().auth.signInWithPassword({ phone: credential, password: signInPassword });
+      : await supabase().auth.signInWithPassword({
+          email: `${credential.replace(/[^0-9]/g, '')}@phone.dar-minna.local`,
+          password: signInPassword,
+        });
     setLoading(false);
     if (error) {
       if (checked) {
