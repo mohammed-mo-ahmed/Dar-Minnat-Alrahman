@@ -45,11 +45,16 @@ export default function AuthPage() {
       return;
     }
 
-    const { data: exists, error: checkError } = signInMethod === 'email'
-      ? await supabase().rpc('check_user_exists_by_email', { email_to_check: credential })
-      : await supabase().rpc('check_user_exists_by_phone', { phone_to_check: credential });
-
-    if (checkError) {
+    let exists = false;
+    try {
+      const res = await fetch('/api/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential, type: signInMethod }),
+      });
+      const json = await res.json();
+      exists = json.exists;
+    } catch {
       setLoading(false);
       toast.error('حدث خطأ أثناء التحقق من البيانات.');
       return;
