@@ -90,7 +90,7 @@ export async function fetchSections(): Promise<Section[]> {
   return (data as Section[]) ?? [];
 }
 
-/** Get the section IDs for a sheikh — profile.section_id first, then fallback to groups */
+/** Get the section IDs for a sheikh — profile.section_id first, then student record, then groups */
 export async function fetchMySectionIds(sheikhId: string): Promise<string[]> {
   // 1. Try profile's section_id
   const { data: profile } = await supabase()
@@ -100,7 +100,15 @@ export async function fetchMySectionIds(sheikhId: string): Promise<string[]> {
     .maybeSingle();
   if (profile?.section_id) return [profile.section_id];
 
-  // 2. Fallback: groups the sheikh supervises
+  // 2. Try the user's own student record (for existing accounts)
+  const { data: ownStudent } = await supabase()
+    .from('students')
+    .select('section_id')
+    .eq('user_id', sheikhId)
+    .maybeSingle();
+  if (ownStudent?.section_id) return [ownStudent.section_id];
+
+  // 3. Fallback: groups the sheikh supervises
   const { data, error } = await supabase()
     .from('groups')
     .select('section_id')
