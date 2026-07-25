@@ -37,22 +37,41 @@ export default function AuthPage() {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
+    const credential = signInMethod === 'email' ? signInEmail.trim() : signInPhone.trim();
+    if (!credential) {
+      setLoading(false);
+      toast.error(signInMethod === 'email' ? 'يرجى إدخال البريد الإلكتروني.' : 'يرجى إدخال رقم الهاتف.');
+      return;
+    }
+
+    const { data: exists, error: checkError } = signInMethod === 'email'
+      ? await supabase().rpc('check_user_exists_by_email', { email_to_check: credential })
+      : await supabase().rpc('check_user_exists_by_phone', { phone_to_check: credential });
+
+    if (checkError) {
+      setLoading(false);
+      toast.error('حدث خطأ أثناء التحقق من البيانات.');
+      return;
+    }
+
+    if (!exists) {
+      setLoading(false);
+      toast.error(signInMethod === 'email'
+        ? 'البريد الإلكتروني غير صحيح. لا يوجد حساب بهذا البريد.'
+        : 'رقم الهاتف غير صحيح. لا يوجد حساب بهذا الرقم.');
+      return;
+    }
+
     const { error } = signInMethod === 'email'
-      ? await supabase().auth.signInWithPassword({ email: signInEmail.trim(), password: signInPassword })
-      : await supabase().auth.signInWithPassword({ phone: signInPhone.trim(), password: signInPassword });
+      ? await supabase().auth.signInWithPassword({ email: credential, password: signInPassword })
+      : await supabase().auth.signInWithPassword({ phone: credential, password: signInPassword });
     setLoading(false);
     if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('invalid login credentials')) {
-        toast.error('كلمة المرور غير صحيحة. حاول مرة أخرى.');
-      } else if (msg.includes('user not found') || msg.includes('no user')) {
-        toast.error(signInMethod === 'email'
-          ? 'لا يوجد حساب بهذا البريد الإلكتروني.'
-          : 'لا يوجد حساب بهذا الرقم.');
-      } else if (msg.includes('email not confirmed')) {
+      if (error.message.toLowerCase().includes('email not confirmed')) {
         toast.error('البريد الإلكتروني لم يتم تأكيده بعد. فضلًا تحقق من بريدك.');
       } else {
-        toast.error('بيانات الدخول غير صحيحة: ' + error.message);
+        toast.error('الباسورد خطأ. حاول مرة أخرى.');
       }
       return;
     }
