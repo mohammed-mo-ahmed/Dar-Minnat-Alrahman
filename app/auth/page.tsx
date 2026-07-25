@@ -45,7 +45,7 @@ export default function AuthPage() {
       return;
     }
 
-    let exists = false;
+    let checked = false;
     try {
       const res = await fetch('/api/check-user', {
         method: 'POST',
@@ -53,19 +53,18 @@ export default function AuthPage() {
         body: JSON.stringify({ credential, type: signInMethod }),
       });
       const json = await res.json();
-      exists = json.exists;
+      if (json.ok) {
+        if (!json.exists) {
+          setLoading(false);
+          toast.error(signInMethod === 'email'
+            ? 'البريد الإلكتروني غير صحيح. لا يوجد حساب بهذا البريد.'
+            : 'رقم الهاتف غير صحيح. لا يوجد حساب بهذا الرقم.');
+          return;
+        }
+        checked = true;
+      }
     } catch {
-      setLoading(false);
-      toast.error('حدث خطأ أثناء التحقق من البيانات.');
-      return;
-    }
-
-    if (!exists) {
-      setLoading(false);
-      toast.error(signInMethod === 'email'
-        ? 'البريد الإلكتروني غير صحيح. لا يوجد حساب بهذا البريد.'
-        : 'رقم الهاتف غير صحيح. لا يوجد حساب بهذا الرقم.');
-      return;
+      // ignore API failure — fall through to try signInWithPassword directly
     }
 
     const { error } = signInMethod === 'email'
@@ -73,10 +72,13 @@ export default function AuthPage() {
       : await supabase().auth.signInWithPassword({ phone: credential, password: signInPassword });
     setLoading(false);
     if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed')) {
+      if (checked) {
+        // credential is confirmed correct, so password must be wrong
+        toast.error('الباسورد خطأ. حاول مرة أخرى.');
+      } else if (error.message.toLowerCase().includes('email not confirmed')) {
         toast.error('البريد الإلكتروني لم يتم تأكيده بعد. فضلًا تحقق من بريدك.');
       } else {
-        toast.error('الباسورد خطأ. حاول مرة أخرى.');
+        toast.error('بيانات الدخول غير صحيحة. تأكد من الإيميل/الرقم وكلمة المرور.');
       }
       return;
     }
