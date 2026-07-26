@@ -54,7 +54,18 @@ USING (
     public.get_role() = 'sheikh'
     AND EXISTS (
       SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.section_id = students.section_id
+      WHERE p.id = auth.uid()
+        AND (
+          p.section_id = students.section_id
+          OR (
+            p.section_id IS NULL
+            AND EXISTS (
+              SELECT 1 FROM public.groups g
+              WHERE g.supervisor_id = auth.uid()
+                AND g.section_id = students.section_id
+            )
+          )
+        )
     )
   )
   OR EXISTS (
