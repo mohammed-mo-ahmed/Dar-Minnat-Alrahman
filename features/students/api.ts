@@ -6,7 +6,7 @@ import type { Student, Group, Section } from '@/shared/types';
 export async function fetchStudents(): Promise<Student[]> {
   const { data, error } = await supabase()
     .from('students')
-    .select('*, group:groups(*, section:sections(*), supervisor:profiles(id, display_name, phone))')
+    .select('*, group:groups(*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone))')
     .order('full_name');
   if (error) throw error;
   return (data as Student[]) ?? [];
@@ -15,7 +15,7 @@ export async function fetchStudents(): Promise<Student[]> {
 export async function fetchStudentsForSheikh(sheikhId: string): Promise<Student[]> {
   const { data, error } = await supabase()
     .from('students')
-    .select('*, group:groups!inner(*, section:sections(*), supervisor:profiles(id, display_name, phone))')
+    .select('*, group:groups!inner(*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone))')
     .eq('group.supervisor_id', sheikhId)
     .order('full_name');
   if (error) throw error;
@@ -25,7 +25,7 @@ export async function fetchStudentsForSheikh(sheikhId: string): Promise<Student[
 export async function fetchStudent(id: string): Promise<Student | null> {
   const { data, error } = await supabase()
     .from('students')
-    .select('*, group:groups(*, section:sections(*), supervisor:profiles(id, display_name, phone))')
+    .select('*, group:groups(*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone))')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -35,7 +35,7 @@ export async function fetchStudent(id: string): Promise<Student | null> {
 export async function fetchMyStudent(userId: string): Promise<Student | null> {
   const { data, error } = await supabase()
     .from('students')
-    .select('*, group:groups(*, section:sections(*), supervisor:profiles(id, display_name, phone))')
+    .select('*, group:groups(*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone))')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -45,7 +45,7 @@ export async function fetchMyStudent(userId: string): Promise<Student | null> {
 export async function fetchGuardianStudents(guardianId: string): Promise<Student[]> {
   const { data, error } = await supabase()
     .from('guardian_links')
-    .select('student:students(*, group:groups(*, section:sections(*), supervisor:profiles(id, display_name, phone)))')
+    .select('student:students(*, group:groups(*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone)))')
     .eq('guardian_id', guardianId)
     .eq('status', 'approved');
   if (error) throw error;
@@ -124,7 +124,7 @@ export async function fetchStudentsBySection(sectionIds: string[]): Promise<Stud
   if (sectionIds.length === 0) return [];
   const { data, error } = await supabase()
     .from('students')
-    .select('*, group:groups(*, section:sections(*), supervisor:profiles(id, display_name, phone))')
+    .select('*, group:groups(*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone))')
     .in('section_id', sectionIds)
     .order('full_name');
   if (error) throw error;

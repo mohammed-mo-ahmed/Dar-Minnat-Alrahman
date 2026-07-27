@@ -21,7 +21,7 @@ export async function fetchSections(): Promise<Section[]> {
 export async function fetchGroups(): Promise<Group[]> {
   const { data, error } = await supabase()
     .from('groups')
-    .select('*, section:sections(*), supervisor:profiles(id, display_name, phone)')
+    .select('*, section:sections(*), supervisor:profiles!groups_supervisor_id_fkey(id, display_name, phone)')
     .order('name');
   if (error) throw error;
   return (data as Group[]) ?? [];
