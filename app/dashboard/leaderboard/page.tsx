@@ -61,8 +61,8 @@ export default function LeaderboardPage() {
                 const r = rows[idx];
                 if (!r) return <div key={idx} />;
                 const place = idx + 1;
-                const heights = ['h-28', 'h-36', 'h-24'];
-                const colors = ['from-slate-300 to-slate-400 text-slate-700', 'from-amber-300 to-amber-500 text-amber-700', 'from-orange-300 to-orange-500 text-orange-700'];
+                const heights = ['h-36', 'h-28', 'h-24'];
+                const colors = ['from-amber-300 to-amber-500 text-amber-700', 'from-slate-300 to-slate-400 text-slate-700', 'from-orange-300 to-orange-500 text-orange-700'];
                 return (
                   <div key={r.student_id} className="flex flex-col items-center justify-end">
                     <Avatar className="h-14 w-14 mb-2 border-2 border-primary/20">
