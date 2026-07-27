@@ -8,14 +8,29 @@ import type { Student } from '@/shared/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Trophy, Star, Medal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Loader2, Plus, Trophy, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { awardPoints } from '@/features/points-rewards/api';
 
 export default function PointsPage() {
   const { profile: me } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [awardStudent, setAwardStudent] = useState<Student | null>(null);
+  const [awardPointsVal, setAwardPointsVal] = useState('');
+  const [awardReason, setAwardReason] = useState('');
+  const [awarding, setAwarding] = useState(false);
 
   const load = useCallback(async () => {
     if (!me) return;
@@ -36,6 +51,31 @@ export default function PointsPage() {
 
   if (me?.role !== 'admin' && me?.role !== 'sheikh') {
     return <div className="text-muted-foreground">هذه الصفحة متاحة للمدير أو الشيخ فقط.</div>;
+  }
+
+  async function handleAward() {
+    if (!awardStudent) return;
+    const pts = parseInt(awardPointsVal, 10);
+    if (isNaN(pts) || pts === 0) {
+      toast.error('عدد النقاط يجب أن يكون رقمًا غير صفر');
+      return;
+    }
+    setAwarding(true);
+    try {
+      await awardPoints(awardStudent.id, pts, awardReason || '', 'sheikh_reward');
+      toast.success(pts > 0
+        ? `تمت إضافة ${pts} نقطة لـ ${awardStudent.full_name}`
+        : `تم خصم ${Math.abs(pts)} نقطة من ${awardStudent.full_name}`
+      );
+      setAwardStudent(null);
+      setAwardPointsVal('');
+      setAwardReason('');
+      load();
+    } catch (e: any) {
+      toast.error('تعذّرت إضافة النقاط: ' + e.message);
+    } finally {
+      setAwarding(false);
+    }
   }
 
   const sorted = [...students].sort((a, b) => b.points_balance - a.points_balance);
@@ -80,12 +120,58 @@ export default function PointsPage() {
                   <Badge className="bg-accent/15 text-accent-foreground border-accent/30">
                     <Star className="h-3 w-3 me-1" /> {s.points_balance}
                   </Badge>
+                  {me?.role !== 'student' && me?.role !== 'guardian' && (
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
+                      setAwardStudent(s);
+                      setAwardPointsVal('');
+                      setAwardReason('');
+                    }}>
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+      <Dialog open={!!awardStudent} onOpenChange={(o) => {
+        if (!o) { setAwardStudent(null); setAwardPointsVal(''); setAwardReason(''); }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>منح نقاط لـ {awardStudent?.full_name}</DialogTitle>
+            <DialogDescription>أدخل عدد النقاط (موجب أو سالب) والسبب</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>عدد النقاط *</Label>
+              <Input
+                type="number"
+                value={awardPointsVal}
+                onChange={(e) => setAwardPointsVal(e.target.value)}
+                placeholder="مثال: 10 أو -5"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>السبب</Label>
+              <Input
+                value={awardReason}
+                onChange={(e) => setAwardReason(e.target.value)}
+                placeholder="حفظ سورة البقرة"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAwardStudent(null); setAwardPointsVal(''); setAwardReason(''); }}>
+              إلغاء
+            </Button>
+            <Button onClick={handleAward} disabled={awarding || !awardPointsVal}>
+              {awarding && <Loader2 className="h-4 w-4 animate-spin" />} تأكيد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
